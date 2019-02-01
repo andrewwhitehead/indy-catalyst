@@ -2,7 +2,9 @@
 Represents an invitation message for establishing connection.
 """
 
-from marshmallow import Schema, fields, post_load
+from marshmallow import (
+    Schema, ValidationError, fields, post_dump, post_load, validates_schema,
+)
 
 from ...agent_message import AgentMessage
 from ...message_types import MessageTypes
@@ -10,15 +12,22 @@ from ...validators import must_not_be_none
 
 from ..handlers.connection_invitation_handler import ConnectionInvitationHandler
 
-from ....models.agent_endpoint import AgentEndpoint, AgentEndpointSchema
-
-
 class ConnectionInvitation(AgentMessage):
-    def __init__(self, endpoint: AgentEndpoint, image_url: str, connection_key: str):
+    def __init__(
+            self,
+            label: str,
+            *,
+            did: str = None,
+            key: str = None,
+            endpoint: str = None,
+            image_url: str = None,
+        ):
         self.handler = ConnectionInvitationHandler(self)
+        self.did = did
+        self.key = key
         self.endpoint = endpoint
         self.image_url = image_url
-        self.connection_key = connection_key
+        self.label = label
 
     @property
     # Avoid clobbering builtin property
@@ -35,14 +44,34 @@ class ConnectionInvitation(AgentMessage):
 
 class ConnectionInvitationSchema(Schema):
     # Avoid clobbering builtin property
-    _type = fields.Str(data_key="@type", required=True)
-    endpoint = fields.Nested(
-        AgentEndpointSchema, validate=must_not_be_none, required=True
-    )
-    image_url = fields.Str(required=True)
-    connection_key = fields.Str(required=True)
+    _type = fields.Str(data_key="@type")
+    label = fields.Str()
+    did = fields.Str(required=False)
+    key = fields.Str(required=False)
+    endpoint = fields.Str(required=False)
+    image_url = fields.Str(required=False)
 
     @post_load
     def make_model(self, data: dict) -> ConnectionInvitation:
         del data["_type"]
         return ConnectionInvitation(**data)
+
+    @post_dump
+    def remove_empty_values(self, data):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
+
+    @validates_schema
+    def validate_fields(self, data):
+        fields = ()
+        if "did" in data:
+            if "key" in data:
+                raise ValidationError("Fields are incompatible", ("did", "key"))
+            if "endpoint" in data:
+                raise ValidationError("Fields are incompatible", ("did", "endpoint"))
+        elif "key" not in data:
+            raise ValidationError("One or the other is required", ("did", "key"))
+        elif "endpoint" not in data:
+            raise ValidationError("Both fields are required", ("key", "endpoint"))

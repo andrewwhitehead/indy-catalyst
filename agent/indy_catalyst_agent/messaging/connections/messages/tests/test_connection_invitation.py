@@ -5,23 +5,35 @@ from unittest import mock, TestCase
 
 
 class TestConnectionInvitation(TestCase):
-    endpoint = "endpoint"
-    image_url = "image_url"
-    connection_key = "connection_key"
+    did = "did:sov:QmWbsNYhMrjHiqZDTUTEJs"
+    key = "8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"
+    endpoint_url = "https://example.com/endpoint"
+    endpoint_did = "did:sov:A2wBhNYhMrjHiqZDTUYH7u"
+    label = "Alice"
+    image_url = "https://example.com/image.jpg"
 
     def test_init(self):
         connection_invitation = ConnectionInvitation(
-            self.endpoint, self.image_url, self.connection_key
+            self.label,
+            did=self.did,
+            key=self.key,
+            endpoint=self.endpoint_url,
+            image_url=self.image_url,
         )
-        assert connection_invitation.endpoint == self.endpoint
+        assert connection_invitation.label == self.label
+        assert connection_invitation.did == self.did
+        assert connection_invitation.key == self.key
+        assert connection_invitation.endpoint == self.endpoint_url
         assert connection_invitation.image_url == self.image_url
-        assert connection_invitation.connection_key == self.connection_key
 
     def test_type(self):
         connection_invitation = ConnectionInvitation(
-            self.endpoint, self.image_url, self.connection_key
+            self.label,
+            did=self.did,
+            key=self.key,
+            endpoint=self.endpoint_url,
+            image_url=self.image_url,
         )
-
         assert connection_invitation._type == MessageTypes.CONNECTION_INVITATION.value
 
     @mock.patch(
@@ -42,7 +54,11 @@ class TestConnectionInvitation(TestCase):
     )
     def test_serialize(self, mock_connection_invitation_schema_dump):
         connection_invitation = ConnectionInvitation(
-            self.endpoint, self.image_url, self.connection_key
+            self.label,
+            did=self.did,
+            key=self.key,
+            endpoint=self.endpoint_url,
+            image_url=self.image_url,
         )
 
         connection_invitation_dict = connection_invitation.serialize()
@@ -58,7 +74,8 @@ class TestConnectionInvitation(TestCase):
 
 class TestConnectionInvitationSchema(TestCase):
     connection_invitation = ConnectionInvitation(
-        "endpoint", "image_url", "connection_key"
+        "label",
+        did="did:sov:QmWbsNYhMrjHiqZDTUTEJs"
     )
 
     def test_make_model(self):
@@ -70,4 +87,3 @@ class TestConnectionInvitationSchema(TestCase):
 
         model_instance = schema.make_model(data)
         assert type(model_instance) is type(self.connection_invitation)
-
