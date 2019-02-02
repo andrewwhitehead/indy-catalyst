@@ -3,65 +3,48 @@ Represents an invitation message for establishing connection.
 """
 
 from marshmallow import (
-    Schema, ValidationError, fields, post_dump, post_load, validates_schema,
+    ValidationError, fields, validates_schema,
 )
 
-from ...agent_message import AgentMessage
+from ...agent_message import AgentMessage, AgentMessageSchema, ThreadDecorator
 from ...message_types import MessageTypes
-from ...validators import must_not_be_none
 
 from ..handlers.connection_invitation_handler import ConnectionInvitationHandler
 
+
 class ConnectionInvitation(AgentMessage):
+    class Meta:
+        handler_class = ConnectionInvitationHandler
+        schema_class = 'ConnectionInvitationSchema'
+        message_type = MessageTypes.CONNECTION_INVITATION.value
+
     def __init__(
             self,
-            label: str,
             *,
+            label: str = None,
             did: str = None,
             key: str = None,
             endpoint: str = None,
             image_url: str = None,
+            **kwargs,
         ):
-        self.handler = ConnectionInvitationHandler(self)
+        super(ConnectionInvitation, self).__init__(**kwargs)
         self.did = did
         self.key = key
         self.endpoint = endpoint
         self.image_url = image_url
         self.label = label
 
-    @property
-    # Avoid clobbering builtin property
-    def _type(self) -> str:
-        return MessageTypes.CONNECTION_INVITATION.value
 
-    @classmethod
-    def deserialize(cls, obj):
-        return ConnectionInvitationSchema().load(obj)
+class ConnectionInvitationSchema(AgentMessageSchema):
+    class Meta:
+        model_class = ConnectionInvitation
 
-    def serialize(self):
-        return ConnectionInvitationSchema().dump(self)
-
-
-class ConnectionInvitationSchema(Schema):
-    # Avoid clobbering builtin property
-    _type = fields.Str(data_key="@type")
     label = fields.Str()
     did = fields.Str(required=False)
     key = fields.Str(required=False)
     endpoint = fields.Str(required=False)
     image_url = fields.Str(required=False)
-
-    @post_load
-    def make_model(self, data: dict) -> ConnectionInvitation:
-        del data["_type"]
-        return ConnectionInvitation(**data)
-
-    @post_dump
-    def remove_empty_values(self, data):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
 
     @validates_schema
     def validate_fields(self, data):

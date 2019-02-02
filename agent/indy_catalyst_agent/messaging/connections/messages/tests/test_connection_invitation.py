@@ -1,4 +1,4 @@
-from ..connection_invitation import ConnectionInvitation, ConnectionInvitationSchema
+from ..connection_invitation import ConnectionInvitation
 from ....message_types import MessageTypes
 
 from unittest import mock, TestCase
@@ -14,7 +14,7 @@ class TestConnectionInvitation(TestCase):
 
     def test_init(self):
         connection_invitation = ConnectionInvitation(
-            self.label,
+            label=self.label,
             did=self.did,
             key=self.key,
             endpoint=self.endpoint_url,
@@ -28,7 +28,7 @@ class TestConnectionInvitation(TestCase):
 
     def test_type(self):
         connection_invitation = ConnectionInvitation(
-            self.label,
+            label=self.label,
             did=self.did,
             key=self.key,
             endpoint=self.endpoint_url,
@@ -54,7 +54,7 @@ class TestConnectionInvitation(TestCase):
     )
     def test_serialize(self, mock_connection_invitation_schema_dump):
         connection_invitation = ConnectionInvitation(
-            self.label,
+            label=self.label,
             did=self.did,
             key=self.key,
             endpoint=self.endpoint_url,
@@ -74,16 +74,13 @@ class TestConnectionInvitation(TestCase):
 
 class TestConnectionInvitationSchema(TestCase):
     connection_invitation = ConnectionInvitation(
-        "label",
+        label="label",
         did="did:sov:QmWbsNYhMrjHiqZDTUTEJs"
     )
 
     def test_make_model(self):
-        schema = ConnectionInvitationSchema()
+        schema = self.connection_invitation.Schema()
 
         data = self.connection_invitation.serialize()
-        data["_type"] = data["@type"]
-        del data["@type"]
-
-        model_instance = schema.make_model(data)
+        model_instance = ConnectionInvitation.deserialize(data)
         assert type(model_instance) is type(self.connection_invitation)

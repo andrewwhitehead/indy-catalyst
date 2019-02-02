@@ -2,6 +2,10 @@
 Request context class
 """
 
+from ..storage import BaseStorage
+from ..wallet import BaseWallet
+
+
 class BaseRequestContext:
     """
     Context established by Dispatcher and passed into message handlers
