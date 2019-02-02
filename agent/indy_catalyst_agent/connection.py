@@ -1,7 +1,9 @@
 from collections import namedtuple
 import json
 
-from .messaging.connection.messages.connection_invite import ConnectionInvite
+from .messaging.connections.messages.connection_invitation import ConnectionInvitation
+from .messaging.connections.messages.connection_request import ConnectionRequest
+from .messaging.connections.messages.connection_response import ConnectionResponse
 from .messaging.request_context import BaseRequestContext
 from .storage import BaseStorage, StorageRecord
 from .wallet import BaseWallet
@@ -178,14 +180,14 @@ class ConnectionManager:
         Create a connection response for a received connection request
         """
 
-        connection_key = self.context.my_verkey
+        connection_key = self.context.recipient_verkey
         if not my_endpoint:
             my_endpoint = self.context.default_endpoint
 
         their_label = request.label
         their_did = request.connection.did
         conn_did_doc = request.connection.did_doc
-        their_verkey = conn_did_doc.key
+        their_verkey = conn_did_doc.key # may be different from self.context.sender_verkey
         their_endpoint = conn_did_doc.endpoint
 
         # Create a new pairwise record with a newly-generated local DID
