@@ -12,5 +12,5 @@ class BasicMessageHandler(BaseHandler):
         msg = context.message.content
         if msg.startswith("Reply with: "):
             reply = msg[12:]
-            reply = BasicMessage(content=reply)
+            reply = BasicMessage(content=reply, _l10n=context.message._l10n)
             await responder.send_reply(reply)
