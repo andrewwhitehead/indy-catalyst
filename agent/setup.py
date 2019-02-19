@@ -11,7 +11,7 @@ VERSION = version_meta["__version__"]
 def parse_requirements(filename):
     """Load requirements from a pip requirements file."""
     lineiter = (line.strip() for line in open(filename))
-    return [line for line in lineiter if line and not line.startswith("#")]
+    return [line for line in lineiter if line and not line.startswith("#") and "von_anchor" not in line]
 
 
 if __name__ == "__main__":
