@@ -18,4 +18,7 @@ class ConnectionInvitationHandler(BaseHandler):
 
         mgr = ConnectionManager(context)
         request, target = await mgr.accept_invitation(context.message)
+
+        print("\nSEND REQUEST TO: {}\n".format(target.recipient_keys))
+
         await responder.send_outbound(request, target)

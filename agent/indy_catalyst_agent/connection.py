@@ -187,7 +187,7 @@ class ConnectionManager:
             my_info.did, "1", PublicKeyType.ED25519_SIG_2018, controller, value, True
         )
         did_doc.verkeys.append(pk)
-        service = Service(my_info.did, "indy", "IndyAgent", my_endpoint)
+        service = Service(my_info.did, "indy", "IndyAgent", my_endpoint, my_info.verkey)
         did_doc.services.append(service)
 
         # Create connection request message
@@ -210,6 +210,9 @@ class ConnectionManager:
             recipient_keys=[their_connection_key],
             sender_key=my_info.verkey,
         )
+
+        self._logger.debug("Created connection request %s for %s", request, target)
+
         return request, target
 
     async def find_request(self, request_id: str) -> ConnectionRequest:
@@ -255,7 +258,8 @@ class ConnectionManager:
         their_did = request.connection.did
         conn_did_doc = request.connection.did_doc
         # may be different from self.context.sender_verkey
-        their_verkey = conn_did_doc.verkeys[0].value
+        ###their_verkey = conn_did_doc.verkeys[0].value
+        their_verkey = conn_did_doc.services[0]._key
         their_endpoint = conn_did_doc.services[0].endpoint
 
         # Create a new pairwise record with a newly-generated local DID
@@ -279,7 +283,7 @@ class ConnectionManager:
             my_did, "1", PublicKeyType.ED25519_SIG_2018, controller, value, True
         )
         did_doc.verkeys.append(pk)
-        service = Service(my_did, "indy", "IndyAgent", my_endpoint)
+        service = Service(my_did, "indy", "IndyAgent", my_endpoint, pairwise.my_verkey)
         did_doc.services.append(service)
 
         response = ConnectionResponse(
@@ -317,7 +321,8 @@ class ConnectionManager:
 
         their_did = response.connection.did
         conn_did_doc = response.connection.did_doc
-        their_verkey = conn_did_doc.verkeys[0].value
+        ##their_verkey = conn_did_doc.verkeys[0].value
+        their_verkey = conn_did_doc.services[0]._key
         their_endpoint = conn_did_doc.services[0].endpoint
 
         my_info = await self.context.wallet.get_local_did(my_did)
@@ -460,10 +465,9 @@ class ConnectionManager:
 
         if isinstance(message_body, bytes):
             try:
-                message_json, from_verkey, to_verkey = \
-                    await self.context.wallet.unpack_message(
-                        message_body
-                    )
+                message_json, from_verkey, to_verkey = await self.context.wallet.unpack_message(
+                    message_body
+                )
             except WalletError:
                 self._logger.debug("Message unpack failed, trying JSON")
 

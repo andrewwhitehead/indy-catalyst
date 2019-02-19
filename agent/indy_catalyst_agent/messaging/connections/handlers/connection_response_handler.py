@@ -15,4 +15,4 @@ class ConnectionResponseHandler(BaseHandler):
         target = await mgr.accept_response(context.message)
 
         # send trust ping in response
-        await responder.send_outbound(Ping(), target)
+        # await responder.send_outbound(Ping(), target)
