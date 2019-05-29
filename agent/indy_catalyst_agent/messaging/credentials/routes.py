@@ -8,7 +8,6 @@ from urllib.parse import parse_qs
 from .manager import CredentialManager
 from .models.credential_exchange import CredentialExchange, CredentialExchangeSchema
 
-from ..connections.manager import ConnectionManager
 from ..connections.models.connection_record import ConnectionRecord
 
 from ...holder.base import BaseHolder
@@ -212,23 +211,19 @@ async def credential_exchange_send_offer(request: web.BaseRequest):
     connection_id = body.get("connection_id")
     credential_definition_id = body.get("credential_definition_id")
 
-    connection_manager = ConnectionManager(context)
     credential_manager = CredentialManager(context)
 
     connection_record = await ConnectionRecord.retrieve_by_id(context, connection_id)
 
-    connection_target = await connection_manager.get_connection_target(
-        connection_record
-    )
-
-    # TODO: validate connection_record valid
+    if not connection_record.is_active:
+        return web.HTTPForbidden()
 
     (
         credential_exchange_record,
         credential_offer_message,
     ) = await credential_manager.create_offer(credential_definition_id, connection_id)
 
-    await outbound_handler(credential_offer_message, connection_target)
+    await outbound_handler(credential_offer_message, connection_id=connection_id)
 
     return web.json_response(credential_exchange_record.serialize())
 
@@ -254,19 +249,16 @@ async def credential_exchange_send_request(request: web.BaseRequest):
     credential_exchange_record = await CredentialExchange.retrieve_by_id(
         context, credential_exchange_id
     )
+    connection_id = credential_exchange_record.connection_id
 
     assert credential_exchange_record.state == CredentialExchange.STATE_OFFER_RECEIVED
 
     credential_manager = CredentialManager(context)
-    connection_manager = ConnectionManager(context)
 
-    connection_record = await ConnectionRecord.retrieve_by_id(
-        context, credential_exchange_record.connection_id
-    )
+    connection_record = await ConnectionRecord.retrieve_by_id(context, connection_id)
 
-    connection_target = await connection_manager.get_connection_target(
-        connection_record
-    )
+    if not connection_record.is_active:
+        return web.HTTPForbidden()
 
     (
         credential_exchange_record,
@@ -275,7 +267,7 @@ async def credential_exchange_send_request(request: web.BaseRequest):
         credential_exchange_record, connection_record
     )
 
-    await outbound_handler(credential_request_message, connection_target)
+    await outbound_handler(credential_request_message, connection_id=connection_id)
     return web.json_response(credential_exchange_record.serialize())
 
 
@@ -303,19 +295,15 @@ async def credential_exchange_issue(request: web.BaseRequest):
     credential_exchange_record = await CredentialExchange.retrieve_by_id(
         context, credential_exchange_id
     )
+    connection_id = credential_exchange_record.connection_id
 
     assert credential_exchange_record.state == CredentialExchange.STATE_REQUEST_RECEIVED
 
     credential_manager = CredentialManager(context)
-    connection_manager = ConnectionManager(context)
 
-    connection_record = await ConnectionRecord.retrieve_by_id(
-        context, credential_exchange_record.connection_id
-    )
-
-    connection_target = await connection_manager.get_connection_target(
-        connection_record
-    )
+    connection_record = await ConnectionRecord.retrieve_by_id(context, connection_id)
+    if not connection_record.is_active:
+        return web.HTTPForbidden()
 
     (
         credential_exchange_record,
@@ -324,7 +312,7 @@ async def credential_exchange_issue(request: web.BaseRequest):
         credential_exchange_record, credential_values
     )
 
-    await outbound_handler(credential_request_message, connection_target)
+    await outbound_handler(credential_request_message, connection_id=connection_id)
     return web.json_response(credential_exchange_record.serialize())
 
 
